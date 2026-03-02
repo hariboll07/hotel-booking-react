@@ -1,0 +1,41 @@
+import React from "react";
+import HotelCard from "./HotelCard";
+import Title from "./Title";
+import { useNavigate } from "react-router-dom";
+import { useAppContext } from "../context/AppContext";
+
+const FeaturedDestination = () => {
+  const navigate = useNavigate();
+  const { rooms } = useAppContext();
+
+  // Show only first 4 available rooms on homepage
+  const featuredRooms = rooms.filter((r) => r.isAvailable !== false).slice(0, 4);
+
+  return (
+    <div className="flex flex-col item-center px-6 md:px-16 lg:px-24 bg-slate-50 py-20">
+      <Title
+        title="Featured Destination"
+        subtitle="Discover our handpicked selection of exceptional properties around the world, offering unparalleled luxury and unforgettable experiences."
+      />
+
+      <div className="flex flex-wrap item-center justify-center gap-6 mt-20">
+        {featuredRooms.map((room, index) => (
+          <HotelCard key={room._id} room={room} index={index} />
+        ))}
+      </div>
+
+      <div className="flex item-center justify-center">
+        <button
+          onClick={() => {
+            navigate("/rooms");
+            scrollTo(0, 0);
+          }}
+          className="my-16 px-6 py-2 text-sm font-medium border border-gray-300 rounded bg-white hover:bg-gray-50 transition-all cursor-pointer w-fit"
+        >
+          View All Rooms →
+        </button>
+      </div>
+    </div>
+  );
+};
+export default FeaturedDestination;

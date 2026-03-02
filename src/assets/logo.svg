@@ -1,0 +1,39 @@
+<svg width='500' height="150" viewBox="0 0 380 120" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- ICON -->
+<g transform="translate(8,6) scale(1.25)">
+
+  <!-- Location Pin -->
+  <path
+    d="M46 20
+       c-12 0-22 8-22 18
+       0 14 22 34 22 34
+       s22-20 22-34
+       c0-10-10-18-22-18z"
+    fill="#ebebeb"/>
+
+  <circle cx="46" cy="44" r="5" fill="#242424"/>
+
+</g>
+
+
+
+  <!-- TEXT -->
+  <text x="100" y="70"
+        font-size="54"
+        font-family="'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif"
+        font-weight="500">
+    <tspan fill="#ebebeb">stay</tspan>
+    <tspan fill="#ebebeb">Ease</tspan>
+  </text>
+
+  <!-- TAGLINE -->
+  <text x="100" y="98"
+        font-size="20"
+        fill="#ffffff"
+        font-weight='550'
+        font-family="'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif">
+    Book • Relax • Enjoy
+  </text>
+
+</svg>
