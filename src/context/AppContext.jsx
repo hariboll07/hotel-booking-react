@@ -1,10 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useUser } from "@clerk/clerk-react";
-import { roomsDummyData, hotelDummyData } from "../assets/assets";
+import {
+  roomsDummyData,
+  hotelDummyData,
+  hotelDubai,
+  hotelSingapore,
+  hotelLondon,
+} from "../assets/assets";
 
 const AppContext = createContext();
 
-const DUMMY_OWNER_ID = import.meta.env.VITE_DUMMY_OWNER_ID || "demo_owner_placeholder";
+const DUMMY_OWNER_ID =
+  import.meta.env.VITE_DUMMY_OWNER_ID || "demo_owner_placeholder";
 
 const loadFromStorage = (key, fallback) => {
   try {
@@ -22,6 +29,15 @@ const saveToStorage = (key, value) => {
 };
 
 // hotelsByOwner shape: { [ownerId]: [ hotel1, hotel2, ... ] }
+// All 4 dummy hotels that belong to the demo owner
+const ALL_DUMMY_HOTELS = [
+  hotelDummyData,
+  hotelDubai,
+  hotelSingapore,
+  hotelLondon,
+];
+const DUMMY_HOTEL_IDS = ALL_DUMMY_HOTELS.map((h) => h._id);
+
 const loadHotelsByOwner = () => {
   try {
     const stored = localStorage.getItem("app_hotels_by_owner");
@@ -33,16 +49,18 @@ const loadHotelsByOwner = () => {
       migrated[ownerId] = Array.isArray(value) ? value : [value];
     }
 
-    // Always ensure dummy owner has their hotel
-    const dummyHotels = migrated[DUMMY_OWNER_ID] || [];
-    const alreadyHasDummy = dummyHotels.some((h) => h._id === hotelDummyData._id);
-    if (!alreadyHasDummy) {
-      migrated[DUMMY_OWNER_ID] = [hotelDummyData, ...dummyHotels];
-    }
+    // Get user-added hotels (not dummy ones) for the dummy owner
+    const existingForDummy = migrated[DUMMY_OWNER_ID] || [];
+    const userAddedHotels = existingForDummy.filter(
+      (h) => !DUMMY_HOTEL_IDS.includes(h._id),
+    );
+
+    // Always seed all 4 dummy hotels fresh from code + keep user-added ones
+    migrated[DUMMY_OWNER_ID] = [...ALL_DUMMY_HOTELS, ...userAddedHotels];
 
     return migrated;
   } catch {
-    return { [DUMMY_OWNER_ID]: [hotelDummyData] };
+    return { [DUMMY_OWNER_ID]: ALL_DUMMY_HOTELS };
   }
 };
 
@@ -50,7 +68,10 @@ const loadRooms = () => {
   try {
     const stored = localStorage.getItem("app_rooms");
     const parsed = stored ? JSON.parse(stored) : [];
-    const taggedDummyRooms = roomsDummyData.map((r) => ({ ...r, ownerId: DUMMY_OWNER_ID }));
+    const taggedDummyRooms = roomsDummyData.map((r) => ({
+      ...r,
+      ownerId: DUMMY_OWNER_ID,
+    }));
     const dummyRoomIds = roomsDummyData.map((r) => r._id);
     const userAddedRooms = parsed
       .filter((r) => !dummyRoomIds.includes(r._id))
@@ -65,29 +86,36 @@ export const AppProvider = ({ children }) => {
   const { user, isLoaded } = useUser();
 
   const [rooms, setRooms] = useState(loadRooms);
-  const [bookings, setBookings] = useState(() => loadFromStorage("app_bookings", []));
+  const [bookings, setBookings] = useState(() =>
+    loadFromStorage("app_bookings", []),
+  );
   const [hotelsByOwner, setHotelsByOwner] = useState(loadHotelsByOwner);
   const [searchQuery, setSearchQuery] = useState({
-    destination: "", checkIn: "", checkOut: "", guests: 1,
+    destination: "",
+    checkIn: "",
+    checkOut: "",
+    guests: 1,
   });
 
   useEffect(() => saveToStorage("app_rooms", rooms), [rooms]);
   useEffect(() => saveToStorage("app_bookings", bookings), [bookings]);
-  useEffect(() => saveToStorage("app_hotels_by_owner", hotelsByOwner), [hotelsByOwner]);
+  useEffect(
+    () => saveToStorage("app_hotels_by_owner", hotelsByOwner),
+    [hotelsByOwner],
+  );
 
-  const currentUser = isLoaded && user
-    ? {
-        _id: user.id,
-        username: user.fullName || user.username || user.firstName || "User",
-        email: user.primaryEmailAddress?.emailAddress || "",
-        image: user.imageUrl || "",
-      }
-    : null;
+  const currentUser =
+    isLoaded && user
+      ? {
+          _id: user.id,
+          username: user.fullName || user.username || user.firstName || "User",
+          email: user.primaryEmailAddress?.emailAddress || "",
+          image: user.imageUrl || "",
+        }
+      : null;
 
   // ownerHotels = array of all hotels for current owner
-  const ownerHotels = currentUser
-    ? hotelsByOwner[currentUser._id] || []
-    : [];
+  const ownerHotels = currentUser ? hotelsByOwner[currentUser._id] || [] : [];
 
   const isOwner = ownerHotels.length > 0;
 
@@ -146,8 +174,8 @@ export const AppProvider = ({ children }) => {
       prev.map((r) =>
         r._id === updatedRoom._id
           ? { ...r, ...updatedRoom, updatedAt: new Date().toISOString() }
-          : r
-      )
+          : r,
+      ),
     );
   };
 
@@ -158,8 +186,8 @@ export const AppProvider = ({ children }) => {
   const toggleRoomAvailability = (roomId) => {
     setRooms((prev) =>
       prev.map((r) =>
-        r._id === roomId ? { ...r, isAvailable: !r.isAvailable } : r
-      )
+        r._id === roomId ? { ...r, isAvailable: !r.isAvailable } : r,
+      ),
     );
   };
 
@@ -173,11 +201,12 @@ export const AppProvider = ({ children }) => {
     const nights = Math.max(
       1,
       Math.round(
-        (new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24)
-      )
+        (new Date(checkOutDate) - new Date(checkInDate)) /
+          (1000 * 60 * 60 * 24),
+      ),
     );
     const totalPrice = Math.round(
-      room.pricePerNight * nights * (1 - (room.discount || 0) / 100)
+      room.pricePerNight * nights * (1 - (room.discount || 0) / 100),
     );
 
     const booking = {
@@ -206,8 +235,8 @@ export const AppProvider = ({ children }) => {
   const markAsPaid = (bookingId) => {
     setBookings((prev) =>
       prev.map((b) =>
-        b._id === bookingId ? { ...b, isPaid: true, paymentMethod: "Card" } : b
-      )
+        b._id === bookingId ? { ...b, isPaid: true, paymentMethod: "Card" } : b,
+      ),
     );
   };
 
@@ -221,9 +250,10 @@ export const AppProvider = ({ children }) => {
     ? bookings.filter((b) => b.ownerId === currentUser._id)
     : [];
 
-  const ownerRooms = currentUser && isOwner
-    ? rooms.filter((r) => r.ownerId === currentUser._id)
-    : [];
+  const ownerRooms =
+    currentUser && isOwner
+      ? rooms.filter((r) => r.ownerId === currentUser._id)
+      : [];
 
   const dashboardData = {
     totalBookings: ownerBookings.length,
